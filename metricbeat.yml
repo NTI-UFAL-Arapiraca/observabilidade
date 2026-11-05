@@ -1,0 +1,21 @@
+metricbeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+
+output.elasticsearch:
+  hosts: ['http://esud01:9200']
+  username: 'elastic'
+  password: '${ELASTIC_PASSWORD}'
+
+setup.kibana:
+  host: 'http://kibanaud:5601'
+
+metricbeat.modules:
+  - module: prometheus
+    period: 10s
+    hosts: ['ud-nest-api:3333']
+    metrics_path: /metrics
+    enabled: true
+    metricsets:
+      - collector
+    extra_labels:
+      job: 'ud_nest_api'

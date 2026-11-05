@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'ud_nest_api'
+    static_configs:
+      - targets: ['ud-nest-api:3333']
+    metrics_path: /metrics
+
+  # Exemplo para outro projeto UFAL na rede gti:
+  # - job_name: 'nome_do_projeto_api'
+  #   static_configs:
+  #     - targets: ['nome-do-servico:porta']
+  #   metrics_path: /metrics

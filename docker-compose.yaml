@@ -1,0 +1,118 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - gti
+
+  metricbeat:
+    image: elastic/metricbeat:8.12.0
+    container_name: metricbeat
+    user: root
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
+    volumes:
+      - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: ["-e", "--strict.perms=false"]
+    networks:
+      - gti
+    depends_on:
+      - esud01
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning:ro
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?Defina GF_SECURITY_ADMIN_PASSWORD no .env}
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    restart: unless-stopped
+    networks:
+      - gti
+    depends_on:
+      - prometheus
+
+  esud01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    container_name: esud01
+    environment:
+      node.name: esud01
+      discovery.type: single-node
+      bootstrap.memory_lock: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      xpack.security.enabled: "true"
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - gti
+    volumes:
+      - ./es01:/usr/share/elasticsearch/data
+
+  kibanaud:
+    image: docker.elastic.co/kibana/kibana:7.17.0
+    container_name: kibanaud
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_URL: http://esud01:9200
+      ELASTICSEARCH_HOSTS: '["http://esud01:9200"]'
+      xpack.security.enabled: "true"
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
+    networks:
+      - gti
+    depends_on:
+      - esud01
+
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:7.17.0
+    container_name: apm-server
+    ports:
+      - "8200:8200"
+    command:
+      - apm-server
+      - -e
+      - -E
+      - apm-server.rum.enabled=true
+      - -E
+      - setup.kibana.host=kibanaud:5601
+      - -E
+      - setup.kibana.username=elastic
+      - -E
+      - setup.kibana.password=${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
+      - -E
+      - setup.template.settings.index.number_of_replicas=0
+      - -E
+      - apm-server.kibana.enabled=true
+      - -E
+      - apm-server.kibana.host=kibanaud:5601
+      - -E
+      - apm-server.kibana.username=elastic
+      - -E
+      - apm-server.kibana.password=${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
+      - -E
+      - output.elasticsearch.hosts=["esud01:9200"]
+      - -E
+      - output.elasticsearch.username=elastic
+      - -E
+      - output.elasticsearch.password=${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
+    networks:
+      - gti
+    depends_on:
+      - esud01
+      - kibanaud
+
+networks:
+  gti:
+    external: true

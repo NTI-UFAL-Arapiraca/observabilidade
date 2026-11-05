@@ -1,0 +1,4 @@
+.env
+/grafana/
+/es01/
+.DS_Store
