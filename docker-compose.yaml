@@ -101,5 +101,12 @@ services:
       - esud01
       - kibanaud
 
+networks:
+  default:
+    name: observabilidade
+    ipam:
+      config:
+        - subnet: 10.202.0.0/24
+
 volumes:
   grafana-data:

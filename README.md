@@ -37,7 +37,7 @@ Prometheus e Metricbeat coletam `http://sistemas.arap:3333/metrics` da aplicaç�
 3. Adicione um `job_name` único em `prometheus.yml` e use um alias DNS exclusivo e a porta interna do serviço, por exemplo `meu-projeto-api:8080`. Configure o alias em `networks.gti.aliases` no Compose da aplicação. Se o projeto também precisar enviar métricas ao Elasticsearch, adicione um módulo correspondente em `metricbeat.yml`.
 4. Configure logs e APM na própria aplicação com `http://esud01:9200` e `http://apm-server:8200`, respectivamente, quando esses recursos forem necessários. Use credenciais próprias do ambiente e não as registre no Git.
 
-Os serviços da stack usam a rede privada padrão criada pelo Compose. A coleta atual da UD Nest usa a URL institucional `sistemas.arap`, sem depender da rede Docker da aplicação.
+Os serviços da stack usam a rede privada padrão criada pelo Compose, nomeada `observabilidade` (em vez de `observabilidade_default`). A coleta atual da UD Nest usa a URL institucional `sistemas.arap`, sem depender da rede Docker da aplicação.
 
 ## Notas operacionais
 
