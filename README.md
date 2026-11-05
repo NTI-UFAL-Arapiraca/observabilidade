@@ -5,7 +5,6 @@ Stack central de métricas, logs e rastreamento para projetos da Universidade Fe
 ## Iniciar
 
 ```bash
-docker network create gti  # apenas se a rede ainda não existir
 cp .env.example .env
 # Preencha ELASTIC_PASSWORD e GF_SECURITY_ADMIN_PASSWORD com senhas fortes no .env
 docker compose up -d
@@ -18,7 +17,7 @@ Prometheus e Metricbeat coletam `http://sistemas.arap:3333/metrics` da aplicaç�
 ## Conectar um projeto UFAL
 
 1. Exponha métricas em uma rota HTTP acessível aos coletores, por exemplo `/metrics`. Mantenha a instrumentação e as dependências no repositório da aplicação.
-2. Conecte o serviço da aplicação à rede Docker externa `gti`, mantendo bancos e serviços internos em uma rede privada do próprio projeto:
+2. Garanta que o container do coletor tenha rota e DNS para alcançar o endpoint. A aplicação não precisa participar da rede Docker da stack quando a coleta usa uma URL institucional/pública.
 
    ```yaml
    services:
@@ -38,7 +37,7 @@ Prometheus e Metricbeat coletam `http://sistemas.arap:3333/metrics` da aplicaç�
 3. Adicione um `job_name` único em `prometheus.yml` e use um alias DNS exclusivo e a porta interna do serviço, por exemplo `meu-projeto-api:8080`. Configure o alias em `networks.gti.aliases` no Compose da aplicação. Se o projeto também precisar enviar métricas ao Elasticsearch, adicione um módulo correspondente em `metricbeat.yml`.
 4. Configure logs e APM na própria aplicação com `http://esud01:9200` e `http://apm-server:8200`, respectivamente, quando esses recursos forem necessários. Use credenciais próprias do ambiente e não as registre no Git.
 
-Aliases DNS devem ser exclusivos na rede `gti` quando usados por serviços internos. A coleta atual da UD Nest usa a URL pública `sistemas.arap`, sem depender do alias de container `ud-nest-api`.
+Os serviços da stack usam a rede privada padrão criada pelo Compose. A coleta atual da UD Nest usa a URL institucional `sistemas.arap`, sem depender da rede Docker da aplicação.
 
 ## Notas operacionais
 

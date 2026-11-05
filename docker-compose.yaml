@@ -6,8 +6,6 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    networks:
-      - gti
 
   metricbeat:
     image: elastic/metricbeat:8.12.0
@@ -19,8 +17,6 @@ services:
       - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     command: ["-e", "--strict.perms=false"]
-    networks:
-      - gti
     depends_on:
       - esud01
 
@@ -30,14 +26,12 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./grafana:/var/lib/grafana
+      - grafana-data:/var/lib/grafana
       - ./grafana-provisioning:/etc/grafana/provisioning:ro
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?Defina GF_SECURITY_ADMIN_PASSWORD no .env}
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
     restart: unless-stopped
-    networks:
-      - gti
     depends_on:
       - prometheus
 
@@ -54,8 +48,6 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
-    networks:
-      - gti
     volumes:
       - ./es01:/usr/share/elasticsearch/data
 
@@ -70,8 +62,6 @@ services:
       xpack.security.enabled: "true"
       ELASTICSEARCH_USERNAME: elastic
       ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
-    networks:
-      - gti
     depends_on:
       - esud01
 
@@ -107,12 +97,9 @@ services:
       - output.elasticsearch.username=elastic
       - -E
       - output.elasticsearch.password=${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
-    networks:
-      - gti
     depends_on:
       - esud01
       - kibanaud
 
-networks:
-  gti:
-    external: true
+volumes:
+  grafana-data:
