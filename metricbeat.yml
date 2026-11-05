@@ -12,7 +12,7 @@ setup.kibana:
 metricbeat.modules:
   - module: prometheus
     period: 10s
-    hosts: ['ud-nest-api:3333']
+    hosts: ['sistemas.arap:3333']
     metrics_path: /metrics
     enabled: true
     metricsets:

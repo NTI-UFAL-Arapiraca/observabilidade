@@ -3,7 +3,7 @@
 Este repositório mantém a infraestrutura central de observabilidade da UFAL Campus Arapiraca. A instrumentação, bibliotecas e configuração da aplicação pertencem aos repositórios de cada serviço, como `ud-nest`.
 
 - Preserve a rede externa compartilhada `gti`. Novos projetos devem conectar apenas os serviços que precisam comunicar com a stack; bancos e serviços internos ficam nas redes privadas de cada projeto.
-- Em `prometheus.yml`, use `job_name` único e alvo por DNS de serviço ou alias exclusivo e porta interna. Confirme que o nome DNS é exclusivo na rede `gti`. O alvo atual da UD Nest é `ud-nest-api:3333` em `/metrics`.
+- Em `prometheus.yml`, use `job_name` único e alvo por DNS/URL alcançável pelo coletor. Para serviços externos ao Docker, não dependa de DNS de container; o alvo atual da UD Nest é `sistemas.arap:3333` em `/metrics`.
 - Adicione coleta no `metricbeat.yml` apenas quando houver necessidade de enviar métricas ao Elasticsearch. Evite duplicar módulos e mantenha labels de projeto/serviço identificáveis.
 - Não inclua senhas, tokens, certificados privados, dados persistidos ou arquivos `.env` no Git. Documente variáveis em `.env.example` com valores vazios. Não substitua segredos por valores reais em exemplos.
 - Mantenha nomes de serviços e endpoints estáveis (`prometheus`, `esud01`, `kibanaud`, `apm-server`) enquanto aplicações os consumirem. Mudanças de DNS, portas ou nomes exigem atualização coordenada nos projetos clientes.

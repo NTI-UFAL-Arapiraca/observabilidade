@@ -13,7 +13,7 @@ docker compose up -d
 
 O Compose exige as duas senhas, não fornece valores padrão e lê os arquivos de configuração da raiz deste repositório. O `.env` e os diretórios de dados `grafana/` e `es01/` não são versionados. Não copie dados persistidos ou credenciais entre ambientes sem um procedimento próprio de migração segura.
 
-O Prometheus coleta `http://ud-nest-api:3333/metrics` da aplicação UD Nest pelo alias exclusivo na rede `gti`. Se a API não estiver ativa, esse alvo aparece como indisponível; os demais serviços continuam independentes. O Metricbeat coleta o mesmo endpoint para enviar métricas ao Elasticsearch. Há redundância intencional entre os dois coletores.
+Prometheus e Metricbeat coletam `http://sistemas.arap:3333/metrics` da aplicação UD Nest pela URL pública. Se a API não estiver ativa ou acessível a partir do host Docker, o alvo aparece como indisponível; os demais serviços continuam independentes. O Metricbeat envia as métricas ao Elasticsearch.
 
 ## Conectar um projeto UFAL
 
@@ -38,7 +38,7 @@ O Prometheus coleta `http://ud-nest-api:3333/metrics` da aplicação UD Nest pel
 3. Adicione um `job_name` único em `prometheus.yml` e use um alias DNS exclusivo e a porta interna do serviço, por exemplo `meu-projeto-api:8080`. Configure o alias em `networks.gti.aliases` no Compose da aplicação. Se o projeto também precisar enviar métricas ao Elasticsearch, adicione um módulo correspondente em `metricbeat.yml`.
 4. Configure logs e APM na própria aplicação com `http://esud01:9200` e `http://apm-server:8200`, respectivamente, quando esses recursos forem necessários. Use credenciais próprias do ambiente e não as registre no Git.
 
-Aliases DNS devem ser exclusivos na rede `gti`. A UD Nest publica `ud-nest-api`; mantenha esse alias enquanto os coletores o utilizarem. Para serviços hospedados fora do mesmo Docker host, será necessária conectividade e configuração de rede adicionais; a rede bridge `gti` cobre apenas containers no mesmo host.
+Aliases DNS devem ser exclusivos na rede `gti` quando usados por serviços internos. A coleta atual da UD Nest usa a URL pública `sistemas.arap`, sem depender do alias de container `ud-nest-api`.
 
 ## Notas operacionais
 
