@@ -41,6 +41,13 @@ Os serviços da stack usam a rede privada padrão criada pelo Compose, nomeada `
 
 ## Notas operacionais
 
+- Se o Kibana falhar ao migrar objetos salvos e o Elasticsearch registrar `disk usage exceeded flood-stage watermark`, confira o espaço no filesystem que contém `es01` com `df -h ./es01`. Libere espaço nesse filesystem ou aumente sua capacidade até ficar abaixo do high watermark do Elasticsearch (90% por padrão); o Compose monta `./es01` diretamente como armazenamento persistente, portanto não remova esse diretório nem use `docker compose down -v` para tentar corrigir o problema. O Elasticsearch remove o bloqueio automaticamente quando o uso cai abaixo desse limite. Depois de liberar espaço, confira se ainda há bloqueio:
+
+  ```bash
+  curl --user elastic 'http://localhost:9200/.kibana*/_settings?filter_path=*.settings.index.blocks.read_only_allow_delete&expand_wildcards=all'
+  ```
+
+  O `curl` solicitará a senha de `elastic`. Quando a resposta não mostrar `read_only_allow_delete`, reinicie o Kibana com `docker compose restart kibanaud`. Remova índices de dados apenas conforme a política de retenção e após avaliar a necessidade de backup.
 - As portas 3000, 5601, 8200, 9090, 9200 e 9300 estão publicadas no host, como na stack de origem. Restrinja o acesso por firewall ou remova publicações desnecessárias no ambiente de implantação.
 - `metricbeat:8.12.0` e os componentes Elastic `7.17.0` têm versões maiores diferentes, herdadas da stack original. Verifique compatibilidade antes de operar em produção; esta migração não altera versões.
 - As imagens `prom/prometheus` e `grafana/grafana:latest` mantêm as referências originais, sem pinagem. Planeje pinagem de versões em uma mudança própria.
