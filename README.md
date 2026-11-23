@@ -35,4 +35,14 @@ Abra a pasta **UD Nest** no [Grafana](http://localhost:3000) ou filtre por `serv
 | APM Server | `8200` |
 | Metricbeat | Sem porta publicada |
 
+## Dashboard de logs no Kibana
+
+Para importar o dashboard **UD Nest - Logs da API** e o padrão `logs-ud-api`, execute:
+
+```bash
+docker compose run --rm kibana-import
+```
+
+Para atualizar os objetos já importados com a versão do Git, use `docker compose run --rm kibana-import --overwrite`. Os objetos ficam no espaço padrão do Kibana. [Detalhes da importação](docs/SERVICOS.md#dashboards-do-kibana)
+
 [Documentação dos serviços e operação](docs/SERVICOS.md)

@@ -66,6 +66,14 @@ O dashboard HTTP depende do histograma `http_request_duration_seconds` da versã
 
 O Grafana bloqueia o salvamento pela interface dos dashboards provisionados. Rascunhos salvos na interface e outros dados internos do Grafana ficam no volume `grafana-data`. As séries consultadas pelos painéis ficam no Prometheus. Veja a [documentação de provisionamento do Grafana](https://grafana.com/docs/grafana/latest/administration/provisioning/).
 
+## Dashboards do Kibana
+
+O painel **UD Nest - Logs da API** usa `logs-ud-api` e `@timestamp`. O arquivo de objetos salvos fica em [`kibana-provisioning/ud-nest-logs.ndjson`](../kibana-provisioning/ud-nest-logs.ndjson) e contém o dashboard, seus painéis e o padrão de índice.
+
+No deploy, execute `docker compose run --rm kibana-import` para importar no espaço padrão. O serviço aguarda o Kibana e retorna erro se a API rejeitar algum objeto. Para aplicar uma atualização versionada, acrescente `--overwrite`. Essa opção substitui os objetos com os mesmos IDs, inclusive suas edições na interface.
+
+Use `KIBANA_IMPORT_USERNAME` e `KIBANA_IMPORT_PASSWORD` no ambiente de implantação para uma conta autorizada a importar os objetos. A configuração local pode usar `elastic` com `ELASTIC_PASSWORD`. Para publicar uma edição, exporte o dashboard em **Stack Management → Saved Objects** com os objetos relacionados e atualize o NDJSON no Git.
+
 ## Notas operacionais
 
 - Se o Kibana falhar ao migrar objetos salvos e o Elasticsearch registrar `disk usage exceeded flood-stage watermark`, confira o espaço no filesystem que contém `es01` com `df -h ./es01`. Libere espaço nesse filesystem ou aumente sua capacidade até ficar abaixo do high watermark do Elasticsearch (90% por padrão); o Compose monta `./es01` diretamente como armazenamento persistente, portanto não remova esse diretório nem use `docker compose down -v` para tentar corrigir o problema. O Elasticsearch remove o bloqueio automaticamente quando o uso cai abaixo desse limite. Depois de liberar espaço, confira se ainda há bloqueio:
