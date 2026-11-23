@@ -1,0 +1,17 @@
+services:
+  prometheus:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - type: bind
+        source: ${PROMETHEUS_LOCAL_TARGETS_DIR:-./prometheus-targets/local}
+        target: /etc/prometheus/targets
+        read_only: true
+        bind:
+          create_host_path: false
+
+  metricbeat:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      UD_NEST_METRICS_HOST: ${METRICBEAT_LOCAL_UD_NEST_HOST:-host.docker.internal:3333}

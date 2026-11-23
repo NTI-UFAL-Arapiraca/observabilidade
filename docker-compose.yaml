@@ -6,6 +6,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-targets/institutional:/etc/prometheus/targets:ro
 
   metricbeat:
     image: elastic/metricbeat:8.12.0
@@ -13,6 +14,7 @@ services:
     user: root
     environment:
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
+      UD_NEST_METRICS_HOST: sistemas.arap:3333
     volumes:
       - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -28,6 +30,7 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana-provisioning:/etc/grafana/provisioning:ro
+      - ./grafana-dashboards:/etc/grafana/dashboards:ro
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?Defina GF_SECURITY_ADMIN_PASSWORD no .env}
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning

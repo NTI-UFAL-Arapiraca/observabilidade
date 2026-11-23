@@ -12,10 +12,11 @@ setup.kibana:
 metricbeat.modules:
   - module: prometheus
     period: 10s
-    hosts: ['sistemas.arap:3333']
+    hosts: ['${UD_NEST_METRICS_HOST}']
     metrics_path: /metrics
     enabled: true
     metricsets:
       - collector
-    extra_labels:
-      job: 'ud_nest_api'
+    service.name: ud_nest_api
+    fields:
+      project: ud_nest

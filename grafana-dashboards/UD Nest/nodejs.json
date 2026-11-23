@@ -1,0 +1,281 @@
+{
+  "uid": "ufal-ud-nest-nodejs",
+  "title": "UD Nest - Processo Node.js",
+  "tags": [
+    "ud-nest",
+    "nodejs"
+  ],
+  "schemaVersion": 39,
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Uso de CPU do processo",
+      "description": "100% equivale a um núcleo ocupado. O uso pode passar de 100% em um processo que usa mais de um núcleo.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(process_cpu_seconds_total{job=\"ud_nest_api\"}[$__rate_interval])",
+          "legendFormat": "{{instance}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memória do processo",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "process_resident_memory_bytes{job=\"ud_nest_api\"}",
+          "legendFormat": "RSS · {{instance}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "nodejs_external_memory_bytes{job=\"ud_nest_api\"}",
+          "legendFormat": "Externa ao heap V8 · {{instance}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "id": 2,
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Heap do Node.js",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nodejs_heap_size_used_bytes{job=\"ud_nest_api\"}",
+          "legendFormat": "Usado · {{instance}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "nodejs_heap_size_total_bytes{job=\"ud_nest_api\"}",
+          "legendFormat": "Alocado · {{instance}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "id": 3,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Atraso do event loop",
+      "description": "Percentis de atraso reportados pelo Node.js para cada instância.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "nodejs_eventloop_lag_p50_seconds{job=\"ud_nest_api\"}",
+          "legendFormat": "P50 · {{instance}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "B",
+          "expr": "nodejs_eventloop_lag_p90_seconds{job=\"ud_nest_api\"}",
+          "legendFormat": "P90 · {{instance}}",
+          "range": true,
+          "instant": false
+        },
+        {
+          "refId": "C",
+          "expr": "nodejs_eventloop_lag_p99_seconds{job=\"ud_nest_api\"}",
+          "legendFormat": "P99 · {{instance}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "id": 4,
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Coletas de lixo por segundo",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(nodejs_gc_duration_seconds_count{job=\"ud_nest_api\"}[$__rate_interval])",
+          "legendFormat": "{{kind}} · {{instance}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Tempo desde o início do processo",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - process_start_time_seconds{job=\"ud_nest_api\"}",
+          "legendFormat": "{{instance}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "id": 6,
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 9
+      }
+    }
+  ]
+}
