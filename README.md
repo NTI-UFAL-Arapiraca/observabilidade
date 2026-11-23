@@ -6,6 +6,8 @@ Stack do Campus Arapiraca para centralizar métricas, logs e rastreamento de apl
 
 Na raiz do repositório, crie o `.env` a partir do [`.env.example`](.env.example) se ele ainda não existir. Preencha `ELASTIC_PASSWORD` e `GF_SECURITY_ADMIN_PASSWORD`.
 
+O Elasticsearch 9 usa um volume novo. Para aproveitar os dados da versão 7.17 em `es01/`, consulte as [instruções de migração](docs/SERVICOS.md#versões-e-migração).
+
 ### Modo institucional
 
 Sobe a stack completa. Prometheus e Metricbeat coletam as métricas da UD Nest em `sistemas.arap:3333/metrics`.

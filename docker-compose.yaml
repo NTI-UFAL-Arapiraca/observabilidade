@@ -1,6 +1,6 @@
 services:
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:v3.16.0
     container_name: prometheus
     ports:
       - "9090:9090"
@@ -9,7 +9,7 @@ services:
       - ./prometheus-targets/institutional:/etc/prometheus/targets:ro
 
   metricbeat:
-    image: elastic/metricbeat:8.12.0
+    image: docker.elastic.co/beats/metricbeat:9.5.6
     container_name: metricbeat
     user: root
     environment:
@@ -23,7 +23,7 @@ services:
       - esud01
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.3.1
     container_name: grafana
     ports:
       - "3000:3000"
@@ -39,7 +39,7 @@ services:
       - prometheus
 
   esud01:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.6
     container_name: esud01
     environment:
       node.name: esud01
@@ -47,31 +47,44 @@ services:
       bootstrap.memory_lock: "false"
       ES_JAVA_OPTS: -Xms512m -Xmx512m
       xpack.security.enabled: "true"
+      xpack.security.autoconfiguration.enabled: "false"
+      xpack.security.http.ssl.enabled: "false"
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
     ports:
       - "9200:9200"
       - "9300:9300"
     volumes:
-      - ./es01:/usr/share/elasticsearch/data
+      - elasticsearch-data-v9:/usr/share/elasticsearch/data
+
+  kibana-setup:
+    image: docker.elastic.co/kibana/kibana:9.5.6
+    entrypoint: ["/usr/share/kibana/node/default/bin/node", "/provisioning/configure-system-user.cjs"]
+    command: []
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-${ELASTIC_PASSWORD}}
+    volumes:
+      - ./kibana-provisioning:/provisioning:ro
+    depends_on:
+      - esud01
 
   kibanaud:
-    image: docker.elastic.co/kibana/kibana:7.17.0
+    image: docker.elastic.co/kibana/kibana:9.5.6
     container_name: kibanaud
     ports:
       - "5601:5601"
     environment:
-      ELASTICSEARCH_URL: http://esud01:9200
       ELASTICSEARCH_HOSTS: '["http://esud01:9200"]'
-      xpack.security.enabled: "true"
-      ELASTICSEARCH_USERNAME: elastic
-      ELASTICSEARCH_PASSWORD: ${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-${ELASTIC_PASSWORD}}
     depends_on:
-      - esud01
+      kibana-setup:
+        condition: service_completed_successfully
 
   kibana-import:
-    image: docker.elastic.co/kibana/kibana:7.17.0
+    image: docker.elastic.co/kibana/kibana:9.5.6
     profiles: [provisioning]
-    entrypoint: ["/usr/share/kibana/node/bin/node", "/provisioning/import.cjs"]
+    entrypoint: ["/usr/share/kibana/node/default/bin/node", "/provisioning/import.cjs"]
     command: []
     environment:
       KIBANA_URL: http://kibanaud:5601
@@ -83,23 +96,16 @@ services:
       - kibanaud
 
   apm-server:
-    image: docker.elastic.co/apm/apm-server:7.17.0
+    image: docker.elastic.co/apm/apm-server:9.5.6
     container_name: apm-server
     ports:
       - "8200:8200"
     command:
-      - apm-server
       - -e
       - -E
+      - apm-server.host=0.0.0.0:8200
+      - -E
       - apm-server.rum.enabled=true
-      - -E
-      - setup.kibana.host=kibanaud:5601
-      - -E
-      - setup.kibana.username=elastic
-      - -E
-      - setup.kibana.password=${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
-      - -E
-      - setup.template.settings.index.number_of_replicas=0
       - -E
       - apm-server.kibana.enabled=true
       - -E
@@ -127,3 +133,4 @@ networks:
 
 volumes:
   grafana-data:
+  elasticsearch-data-v9:
