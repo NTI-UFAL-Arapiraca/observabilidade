@@ -13,7 +13,7 @@ O Elasticsearch 9 usa um volume novo. Para aproveitar os dados da versão 7.17 e
 Sobe a stack completa. Prometheus e Metricbeat coletam as métricas da UD Nest em `sistemas.arap:3333/metrics`.
 
 ```bash
-docker compose -f docker-compose.yaml up -d
+docker compose -f compose.yaml up -d
 ```
 
 ### Modo local
@@ -21,7 +21,7 @@ docker compose -f docker-compose.yaml up -d
 Inicie a UD Nest na porta `3333`, acessível ao Docker. O override aponta Prometheus e Metricbeat para `host.docker.internal:3333/metrics`.
 
 ```bash
-docker compose -f docker-compose.yaml -f compose.local.yaml up -d prometheus grafana metricbeat kibanaud
+docker compose -f compose.yaml -f compose.local.yaml up -d prometheus grafana metricbeat kibanaud
 ```
 
 Abra a pasta **UD Nest** no [Grafana](http://localhost:3000) ou filtre por `service.name: "ud_nest_api"` no [Kibana](http://localhost:5601). Para voltar ao alvo institucional, use o comando do modo institucional.
