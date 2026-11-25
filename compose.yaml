@@ -1,9 +1,22 @@
 services:
+  nginx:
+    image: nginx:1.30-alpine
+    container_name: nginx
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v3.16.0
     container_name: prometheus
-    ports:
-      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.route-prefix=/
+      - --web.external-url=${NGINX_PUBLIC_URL:-http://localhost}/prometheus/
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus-targets/institutional:/etc/prometheus/targets:ro
@@ -25,8 +38,6 @@ services:
   grafana:
     image: grafana/grafana:13.3.1
     container_name: grafana
-    ports:
-      - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana-provisioning:/etc/grafana/provisioning:ro
@@ -34,6 +45,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?Defina GF_SECURITY_ADMIN_PASSWORD no .env}
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      GF_SERVER_ROOT_URL: ${NGINX_PUBLIC_URL:-http://localhost}/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     restart: unless-stopped
     depends_on:
       - prometheus
@@ -50,9 +63,6 @@ services:
       xpack.security.autoconfiguration.enabled: "false"
       xpack.security.http.ssl.enabled: "false"
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:?Defina ELASTIC_PASSWORD no .env}
-    ports:
-      - "9200:9200"
-      - "9300:9300"
     volumes:
       - elasticsearch-data-v9:/usr/share/elasticsearch/data
 
@@ -71,10 +81,11 @@ services:
   kibanaud:
     image: docker.elastic.co/kibana/kibana:9.5.6
     container_name: kibanaud
-    ports:
-      - "5601:5601"
     environment:
       ELASTICSEARCH_HOSTS: '["http://esud01:9200"]'
+      SERVER_BASEPATH: /kibana
+      SERVER_REWRITEBASEPATH: "true"
+      SERVER_PUBLICBASEURL: ${NGINX_PUBLIC_URL:-http://localhost}/kibana
       ELASTICSEARCH_USERNAME: kibana_system
       ELASTICSEARCH_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-${ELASTIC_PASSWORD}}
     depends_on:
@@ -87,7 +98,7 @@ services:
     entrypoint: ["/usr/share/kibana/node/default/bin/node", "/provisioning/import.cjs"]
     command: []
     environment:
-      KIBANA_URL: http://kibanaud:5601
+      KIBANA_URL: http://kibanaud:5601/kibana
       KIBANA_IMPORT_USERNAME: ${KIBANA_IMPORT_USERNAME:-elastic}
       KIBANA_IMPORT_PASSWORD: ${KIBANA_IMPORT_PASSWORD:-${ELASTIC_PASSWORD}}
     volumes:
@@ -98,8 +109,6 @@ services:
   apm-server:
     image: docker.elastic.co/apm/apm-server:9.5.6
     container_name: apm-server
-    ports:
-      - "8200:8200"
     command:
       - -e
       - -E
@@ -109,7 +118,7 @@ services:
       - -E
       - apm-server.kibana.enabled=true
       - -E
-      - apm-server.kibana.host=kibanaud:5601
+      - apm-server.kibana.host=kibanaud:5601/kibana
       - -E
       - apm-server.kibana.username=elastic
       - -E

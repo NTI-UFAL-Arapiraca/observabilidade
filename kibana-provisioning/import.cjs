@@ -9,7 +9,8 @@ const { KIBANA_URL, KIBANA_IMPORT_USERNAME, KIBANA_IMPORT_PASSWORD } = process.e
 const filename = 'ud-nest-logs.ndjson';
 
 function request(endpoint, method = 'GET', headers = {}, body) {
-    const url = new URL(endpoint, KIBANA_URL);
+    // Preserva o basePath do Kibana (ex.: http://kibanaud:5601/kibana).
+    const url = new URL(`${KIBANA_URL.replace(/\/+$/, '')}${endpoint}`);
     const client = url.protocol === 'https:' ? https : http;
 
     return new Promise((resolve, reject) => {

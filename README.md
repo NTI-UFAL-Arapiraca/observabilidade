@@ -21,21 +21,26 @@ docker compose -f compose.yaml up -d
 Inicie a UD Nest na porta `3333`, acessível ao Docker. O override aponta Prometheus e Metricbeat para `host.docker.internal:3333/metrics`.
 
 ```bash
-docker compose -f compose.yaml -f compose.local.yaml up -d prometheus grafana metricbeat kibanaud
+docker compose -f compose.yaml -f compose.local.yaml up -d nginx prometheus grafana metricbeat kibanaud
 ```
 
-Abra a pasta **UD Nest** no [Grafana](http://localhost:3000) ou filtre por `service.name: "ud_nest_api"` no [Kibana](http://localhost:5601). Para voltar ao alvo institucional, use o comando do modo institucional.
+Abra a pasta **UD Nest** no [Grafana](http://localhost/grafana/) ou filtre por `service.name: "ud_nest_api"` no [Kibana](http://localhost/kibana/). Para voltar ao alvo institucional, use o comando do modo institucional.
 
-## Portas padrão
+## Proxy reverso (nginx)
 
-| Serviço | Porta no host |
-| --- | --- |
-| Prometheus | `9090` |
-| Grafana | `3000` |
-| Elasticsearch (`esud01`) | `9200` (API), `9300` (transporte) |
-| Kibana (`kibanaud`) | `5601` |
-| APM Server | `8200` |
-| Metricbeat | Sem porta publicada |
+O nginx expõe cada serviço em uma rota própria, na porta `80` do host (configurável com `NGINX_HTTP_PORT`). Configuração em [`nginx/nginx.conf`](nginx/nginx.conf).
+
+| Rota | Serviço | Observação |
+| --- | --- | --- |
+| `/` | Página com links | Estática |
+| `/grafana/` | Grafana | Subcaminho nativo (`GF_SERVER_SERVE_FROM_SUB_PATH`) |
+| `/kibana/` | Kibana (`kibanaud`) | `server.basePath=/kibana` |
+| `/prometheus/` | Prometheus | Prefixo removido pelo nginx; `--web.external-url` |
+| `/elasticsearch/` | Elasticsearch (`esud01`) | API; exige autenticação do Elasticsearch |
+| `/apm/` | APM Server | Ingestão; use `serverUrl` `http://<host>/apm` nos agentes |
+| `/healthz` | nginx | Verificação de saúde |
+
+Se acessar por outro host, porta ou HTTPS, defina `NGINX_PUBLIC_URL` no `.env` (ex.: `http://observabilidade.arap`), pois Grafana, Kibana e Prometheus usam essa URL para gerar links. O nginx é o único ponto de entrada: os demais serviços não publicam portas no host.
 
 ## Dashboard de logs no Kibana
 

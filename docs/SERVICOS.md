@@ -8,21 +8,25 @@ Prometheus e Metricbeat coletam métricas da UD Nest pela URL pública `sistemas
 
 ## Serviços
 
+### nginx (proxy reverso)
+
+Recebe o tráfego HTTP na porta `80` (`NGINX_HTTP_PORT`) e encaminha cada rota ao serviço correspondente pela rede `observabilidade`: `/grafana/`, `/kibana/`, `/prometheus/`, `/elasticsearch/` e `/apm/`. A configuração fica em `nginx/nginx.conf`. O DNS dos serviços é resolvido a cada requisição, então o nginx sobe mesmo com parte da stack desligada (a rota correspondente responde `502`). Grafana e Kibana atendem em subcaminho nativamente (`GF_SERVER_ROOT_URL`/`SERVE_FROM_SUB_PATH` e `SERVER_BASEPATH`); no Prometheus, Elasticsearch e APM Server o nginx remove o prefixo. Para HTTPS ou outro domínio, ajuste `NGINX_PUBLIC_URL` e adicione o certificado fora do Git. Como o Kibana usa `/kibana`, o `kibana-import` e o APM Server acessam `kibanaud:5601/kibana`.
+
 ### Prometheus
 
-Coleta e armazena séries temporais de métricas. A configuração atual busca `/metrics` no alvo público `sistemas.arap:3333` a cada 15 segundos. Grafana usa Prometheus como fonte de dados. Interface: porta `9090`.
+Coleta e armazena séries temporais de métricas. A configuração atual busca `/metrics` no alvo público `sistemas.arap:3333` a cada 15 segundos. Grafana usa Prometheus como fonte de dados. Interface: `/prometheus/` no nginx.
 
 ### Grafana
 
-Cria painéis e gráficos consultando o Prometheus. A configuração provisionada fica em `grafana-provisioning/` e os dashboards versionados ficam em `grafana-dashboards/`. O estado local do Grafana fica no volume `grafana-data`. A interface usa a porta `3000` e a senha administrativa vem de `GF_SECURITY_ADMIN_PASSWORD` no `.env`. Veja o [fluxo de edição e publicação de dashboards](#dashboards-do-grafana).
+Cria painéis e gráficos consultando o Prometheus. A configuração provisionada fica em `grafana-provisioning/` e os dashboards versionados ficam em `grafana-dashboards/`. O estado local do Grafana fica no volume `grafana-data`. A interface fica em `/grafana/` no nginx e a senha administrativa vem de `GF_SECURITY_ADMIN_PASSWORD` no `.env`. Veja o [fluxo de edição e publicação de dashboards](#dashboards-do-grafana).
 
 ### Elasticsearch (`esud01`)
 
-Banco de busca e armazenamento da stack Elastic. Recebe métricas encaminhadas pelo Metricbeat e dados de desempenho recebidos pelo APM Server; pode também armazenar logs quando as aplicações forem configuradas para enviá-los. É um nó único nesta configuração. API HTTP: porta `9200`; comunicação interna do cluster: `9300`. Os dados persistem no volume `elasticsearch-data-v9`. A senha do usuário `elastic` vem de `ELASTIC_PASSWORD`.
+Banco de busca e armazenamento da stack Elastic. Recebe métricas encaminhadas pelo Metricbeat e dados de desempenho recebidos pelo APM Server; pode também armazenar logs quando as aplicações forem configuradas para enviá-los. É um nó único nesta configuração. API HTTP: `/elasticsearch/` no nginx (porta `9200` apenas na rede interna). Os dados persistem no volume `elasticsearch-data-v9`. A senha do usuário `elastic` vem de `ELASTIC_PASSWORD`.
 
 ### Kibana (`kibanaud`)
 
-Interface web para pesquisar, visualizar e administrar os dados no Elasticsearch. Também é usada pelo APM Server para configurar recursos de APM. O serviço `kibana-setup` configura o usuário interno `kibana_system` antes de iniciar o Kibana. Defina `KIBANA_SYSTEM_PASSWORD` para uma senha separada. No ambiente local, se esse campo estiver vazio, o valor vem de `ELASTIC_PASSWORD`. O acesso pela interface usa uma conta do Elasticsearch. Interface na porta `5601`.
+Interface web para pesquisar, visualizar e administrar os dados no Elasticsearch. Também é usada pelo APM Server para configurar recursos de APM. O serviço `kibana-setup` configura o usuário interno `kibana_system` antes de iniciar o Kibana. Defina `KIBANA_SYSTEM_PASSWORD` para uma senha separada. No ambiente local, se esse campo estiver vazio, o valor vem de `ELASTIC_PASSWORD`. O acesso pela interface usa uma conta do Elasticsearch. Interface em `/kibana/` no nginx.
 
 ### Metricbeat
 
@@ -32,7 +36,7 @@ No Kibana, filtre por `service.name: "ud_nest_api"` para ver as métricas da API
 
 ### APM Server (`apm-server`)
 
-Recebe dados de Application Performance Monitoring (APM), como transações, erros e tempos de resposta, enviados por agentes instalados e configurados nas aplicações. Encaminha os eventos ao Elasticsearch e integra-se ao Kibana. A porta de ingestão publicada é `8200`. A instrumentação e os agentes pertencem aos repositórios das aplicações; este serviço sozinho não gera dados APM.
+Recebe dados de Application Performance Monitoring (APM), como transações, erros e tempos de resposta, enviados por agentes instalados e configurados nas aplicações. Encaminha os eventos ao Elasticsearch e integra-se ao Kibana. A ingestão é feita por `/apm/` no nginx (`http://<host>/apm`). A instrumentação e os agentes pertencem aos repositórios das aplicações; este serviço sozinho não gera dados APM.
 
 ## Como os serviços se conectam
 
@@ -85,9 +89,9 @@ Em desenvolvimento, o Elasticsearch 9 inicia com o volume `elasticsearch-data-v9
 - Se o Kibana falhar ao migrar objetos salvos e o Elasticsearch registrar `disk usage exceeded flood-stage watermark`, confira o espaço com `docker compose exec esud01 df -h /usr/share/elasticsearch/data`. Libere espaço ou aumente a capacidade do filesystem do volume. O Elasticsearch remove o bloqueio automaticamente quando o uso cai abaixo do limite. Depois de liberar espaço, confira se ainda há bloqueio:
 
   ```bash
-  curl --user elastic 'http://localhost:9200/.kibana*/_settings?filter_path=*.settings.index.blocks.read_only_allow_delete&expand_wildcards=all'
+  curl --user elastic 'http://localhost/elasticsearch/.kibana*/_settings?filter_path=*.settings.index.blocks.read_only_allow_delete&expand_wildcards=all'
   ```
 
   O `curl` solicitará a senha de `elastic`. Quando a resposta não mostrar `read_only_allow_delete`, reinicie o Kibana com `docker compose restart kibanaud`. Remova índices de dados apenas conforme a política de retenção e após avaliar a necessidade de backup.
-- As portas 3000, 5601, 8200, 9090, 9200 e 9300 estão publicadas no host, como na stack de origem. Restrinja o acesso por firewall ou remova publicações desnecessárias no ambiente de implantação.
+- Somente a porta do nginx (`80` por padrão) está publicada no host; os demais serviços ficam acessíveis apenas na rede `observabilidade`. Restrinja o acesso ao nginx por firewall conforme o escopo desejado.
 - A senha `ELASTIC_PASSWORD` é interpolada no Compose e pode ser visível a operadores com acesso ao Docker ou à configuração renderizada. Trate o host Docker e o arquivo `.env` como sensíveis.
